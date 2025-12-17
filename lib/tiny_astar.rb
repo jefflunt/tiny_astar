@@ -2,6 +2,30 @@ require 'time'
 require 'pry'
 require 'pry-nav'
 
+# ex:
+#   's' is the starting node
+#   'f' is the finishing node
+#   'X' are nodes that are impassable
+#   map = [
+#     [s    ],
+#     [  X  ],
+#     [ XX  ],
+#     [     ],
+#     [    f]
+#   ]
+#   start = [0, 0]
+#   finish = [4, 4]
+#
+#   path = TinyAstar.path_for(map: map, start: start, finish: finish)
+#
+#   => ... and '.' are the steps from 's' to 'f'
+#     map = [
+#       [s    ],
+#       [. X  ],
+#       [.XX  ],
+#       [.    ],
+#       [ ...f]
+#     ]
 module TinyAstar
   Node = Struct.new(:parent, :x, :y, :f, :g)
 
@@ -22,10 +46,6 @@ module TinyAstar
 
     visited = map.map{|row| row.map{|cell| !cell } }
 
-    puts map.map{|row| row.join(', ') }
-    puts '---'
-    puts visited.map{|row| row.join(', ') }
-
     pending_nodes = [
       Node.new(
         parent: nil,
@@ -38,10 +58,8 @@ module TinyAstar
 
     path = []
     solution_node = loop do
-                      p ['pending nodes', pending_nodes, 'f: ', pending_nodes.map{|n| n.f }]
                       curr_node = pending_nodes.shift
                       break unless curr_node
-                      p ['curr_node', curr_node, curr_node.x, curr_node.y, finish, [curr_node.x, curr_node.y] == finish]
                       break curr_node if [curr_node.x, curr_node.y] == finish
             
                       visited[curr_node.y][curr_node.x] = true
@@ -123,7 +141,6 @@ module TinyAstar
             
                         insert_index = pending_nodes.index(pending_nodes.detect{|n| n.f > candidate_node.f }) || pending_nodes.length
                         pending_nodes.insert(insert_index, candidate_node)
-                        p ['inserted new pending node at', insert_index]
                       end
                     end
 
