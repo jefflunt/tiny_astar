@@ -8,4 +8,7 @@ Gem::Specification.new do |s|
   s.files       = ["lib/tiny_astar.rb"]
   s.homepage    = "https://github.com/jefflunt/tiny_astar"
   s.license     = "MIT"
+
+  s.add_development_dependency 'pry'
+  s.add_development_dependency 'pry-nav'
 end

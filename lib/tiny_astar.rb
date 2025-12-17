@@ -1,6 +1,10 @@
 require 'time'
+require 'pry'
+require 'pry-nav'
 
-class TinyAstar
+module TinyAstar
+  Node = Struct.new(:parent, :x, :y, :f, :g)
+
   attr_reader :path   # when pathfinding is complete, this attribute is either:
                       # - empty, meaning no path was found
                       # - non-empty, meaning a path was found
@@ -12,55 +16,149 @@ class TinyAstar
   #   - impassable nodes are `false`
   # start: the coordinates (x, y) of the starting node
   # finish: the coordinates (x, y) of the finishing node
-  def initialize(map:, start:, finish:)
-    @map = map
-    @start = start
-    @finish = finish
+  def self.path_for(map:, start:, finish:)
+    width = map.first.length
+    height = map.length
 
-    @path = []
+    visited = map.map{|row| row.map{|cell| !cell } }
+
+    puts map.map{|row| row.join(', ') }
+    puts '---'
+    puts visited.map{|row| row.join(', ') }
+
+    pending_nodes = [
+      Node.new(
+        parent: nil,
+        x: start[0],
+        y: start[1],
+        f: _pythag_distance(start, finish),
+        g: 0
+      )
+    ]
+
+    path = []
+    solution_node = loop do
+                      p ['pending nodes', pending_nodes]
+                      curr_node = pending_nodes.shift
+                      break unless curr_node
+                      p ['curr_node', curr_node, curr_node.x, curr_node.y, finish, [curr_node.x, curr_node.y] == finish]
+                      break curr_node if [curr_node.x, curr_node.y] == finish
+            
+                      visited[curr_node.y][curr_node.x] = true
+            
+                      [
+                        # N node
+                        Node.new(
+                          parent: curr_node,
+                          x: curr_node.x,
+                          y: curr_node.y - 1,
+                          f: _pythag_distance([curr_node.x, curr_node.y], finish),
+                          g: curr_node.g + 1
+                        ),
+                        # NE node
+                        Node.new(
+                          parent: curr_node,
+                          x: curr_node.x + 1,
+                          y: curr_node.y - 1,
+                          f: _pythag_distance([curr_node.x, curr_node.y], finish),
+                          g: curr_node.g + 1
+                        ),
+                        # E node
+                        Node.new(
+                          parent: curr_node,
+                          x: curr_node.x + 1,
+                          y: curr_node.y,
+                          f: _pythag_distance([curr_node.x, curr_node.y], finish),
+                          g: curr_node.g + 1
+                        ),
+                        # SE node
+                        Node.new(
+                          parent: curr_node,
+                          x: curr_node.x + 1,
+                          y: curr_node.y + 1,
+                          f: _pythag_distance([curr_node.x, curr_node.y], finish),
+                          g: curr_node.g + 1
+                        ),
+                        # S node
+                        Node.new(
+                          parent: curr_node,
+                          x: curr_node.x,
+                          y: curr_node.y + 1,
+                          f: _pythag_distance([curr_node.x, curr_node.y], finish),
+                          g: curr_node.g + 1
+                        ),
+                        # SW node
+                        Node.new(
+                          parent: curr_node,
+                          x: curr_node.x - 1,
+                          y: curr_node.y + 1,
+                          f: _pythag_distance([curr_node.x, curr_node.y], finish),
+                          g: curr_node.g + 1
+                        ),
+                        # W node
+                        Node.new(
+                          parent: curr_node,
+                          x: curr_node.x - 1,
+                          y: curr_node.y,
+                          f: _pythag_distance([curr_node.x, curr_node.y], finish),
+                          g: curr_node.g + 1
+                        ),
+                        # NW node
+                        Node.new(
+                          parent: curr_node,
+                          x: curr_node.x - 1,
+                          y: curr_node.y - 1,
+                          f: _pythag_distance([curr_node.x, curr_node.y], finish),
+                          g: curr_node.g + 1
+                        )
+                      ].each do |candidate_node|
+                        # out-of-bounds checks
+                        next if candidate_node.x < 0
+                        next if candidate_node.y < 0
+                        next if candidate_node.x >= width
+                        next if candidate_node.y >= height
+            
+                        next if visited[candidate_node.y][candidate_node.x] # skip if we've already been there
+                        next unless map[candidate_node.y][candidate_node.x] # skip if impassable
+            
+                        insert_index = pending_nodes.index(pending_nodes.detect{|n| n.f > candidate_node.f }) || pending_nodes.length
+                        pending_nodes.insert(insert_index, candidate_node)
+                        p ['inserted new pending node at', insert_index]
+                      end
+                    end
+
+    loop do
+      break unless solution_node
+      path.unshift(solution_node)
+      solution_node = solution_node.parent
+    end
+
+    path
   end
 
-  def _pathfind
-    # add the starting square (or node) to the open list
-    # repeat:
-    #   - look for the lowest F cost squre on the open list - we refer to this
-    #     as the current square
-    #   - switch ?it? (the current square?) to the closed list (probably want to
-    #     use a Set)
-    #   - for each of the 8 squares adjacent to this current square:
-    #     - if it is not passable, or if it's already on the closed list, ignore
-    #     - if it isn't on the open list, add it to the open list. make the
-    #       current square the parent of this square. record f, g, and h costs
-    #       of the square.
-    #     - if it is on the open list already, check to see if this path to that
-    #       square is better, using G cost as the measure. a lower G cost means
-    #       that this is a better path. if it is a lower cost, change the parent
-    #       of the square to the current square, and recalculate the G and F
-    #       scores of the square. if you are keeping your open list sorted by F
-    #       score, you may need to resort the list ot account for the change.
-    #   - stop when:
-    #     - the target square is added to the closed list, in which case the
-    #       path has been found
-    #     - you fail to find the target square, and the open list is empty, in
-    #       this case there is no path
-    # save the path, working backwards from the target square, go from each
-    # squre to its parent square until you reach the starting square.
+  # calculates a^2 + b^2, where a and b are (x, y) coordinates
+  def self._pythag_distance(a, b)
+    (
+      (b[0] - a[0]).abs**2
+    ) + (
+      (b[1] - a[1]).abs**2
+    )
   end
 
-  def to_s
+  def self._to_s(map, start, finish, path)
     s = ''
 
-    s << '-' * @map[0].length * 3
+    s << '-' * map[0].length * 3
     s << "\n"
-    @map.each_with_index do |row, y|
+    map.each_with_index do |row, y|
       row.each_with_index do |cell, x|
-        if @start == [x, y]
+        if start == [x, y]
           s << 'SSS'
-        elsif @finish == [x, y]
+        elsif finish == [x, y]
           s << 'FFF'
-        elsif @path.include?([x, y])
+        elsif (path.last || start) == ([x, y])
           s << 'xxx'
-        elsif @map[y][x]
+        elsif map[y][x]
           s << '   '
         else
           s << '███'
@@ -68,8 +166,12 @@ class TinyAstar
       end
       s << "\n"
     end
-    s << '-' * @map[0].length * 3
+    s << '-' * map[0].length * 3
+    s << "\n"
 
+    s << "w, h: #{@map[0].length}, #{@map.length}\n"
+    s << "heur: #{_pythagorean_square_distance(@path_stack.last || @start, @finish)}"
+    
     s
   end
 end
