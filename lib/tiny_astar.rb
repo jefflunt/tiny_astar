@@ -38,7 +38,7 @@ module TinyAstar
 
     path = []
     solution_node = loop do
-                      p ['pending nodes', pending_nodes]
+                      p ['pending nodes', pending_nodes, 'f: ', pending_nodes.map{|n| n.f }]
                       curr_node = pending_nodes.shift
                       break unless curr_node
                       p ['curr_node', curr_node, curr_node.x, curr_node.y, finish, [curr_node.x, curr_node.y] == finish]
@@ -52,7 +52,7 @@ module TinyAstar
                           parent: curr_node,
                           x: curr_node.x,
                           y: curr_node.y - 1,
-                          f: _pythag_distance([curr_node.x, curr_node.y], finish),
+                          f: _pythag_distance([curr_node.x, curr_node.y], finish) + curr_node.g,
                           g: curr_node.g + 1
                         ),
                         # NE node
@@ -60,15 +60,15 @@ module TinyAstar
                           parent: curr_node,
                           x: curr_node.x + 1,
                           y: curr_node.y - 1,
-                          f: _pythag_distance([curr_node.x, curr_node.y], finish),
-                          g: curr_node.g + 1
+                          f: _pythag_distance([curr_node.x, curr_node.y], finish) + curr_node.g,
+                          g: curr_node.g + 1.414
                         ),
                         # E node
                         Node.new(
                           parent: curr_node,
                           x: curr_node.x + 1,
                           y: curr_node.y,
-                          f: _pythag_distance([curr_node.x, curr_node.y], finish),
+                          f: _pythag_distance([curr_node.x, curr_node.y], finish) + curr_node.g,
                           g: curr_node.g + 1
                         ),
                         # SE node
@@ -76,15 +76,15 @@ module TinyAstar
                           parent: curr_node,
                           x: curr_node.x + 1,
                           y: curr_node.y + 1,
-                          f: _pythag_distance([curr_node.x, curr_node.y], finish),
-                          g: curr_node.g + 1
+                          f: _pythag_distance([curr_node.x, curr_node.y], finish) + curr_node.g,
+                          g: curr_node.g + 1.414
                         ),
                         # S node
                         Node.new(
                           parent: curr_node,
                           x: curr_node.x,
                           y: curr_node.y + 1,
-                          f: _pythag_distance([curr_node.x, curr_node.y], finish),
+                          f: _pythag_distance([curr_node.x, curr_node.y], finish) + curr_node.g,
                           g: curr_node.g + 1
                         ),
                         # SW node
@@ -92,15 +92,15 @@ module TinyAstar
                           parent: curr_node,
                           x: curr_node.x - 1,
                           y: curr_node.y + 1,
-                          f: _pythag_distance([curr_node.x, curr_node.y], finish),
-                          g: curr_node.g + 1
+                          f: _pythag_distance([curr_node.x, curr_node.y], finish) + curr_node.g,
+                          g: curr_node.g + 1.414
                         ),
                         # W node
                         Node.new(
                           parent: curr_node,
                           x: curr_node.x - 1,
                           y: curr_node.y,
-                          f: _pythag_distance([curr_node.x, curr_node.y], finish),
+                          f: _pythag_distance([curr_node.x, curr_node.y], finish) + curr_node.g,
                           g: curr_node.g + 1
                         ),
                         # NW node
@@ -108,8 +108,8 @@ module TinyAstar
                           parent: curr_node,
                           x: curr_node.x - 1,
                           y: curr_node.y - 1,
-                          f: _pythag_distance([curr_node.x, curr_node.y], finish),
-                          g: curr_node.g + 1
+                          f: _pythag_distance([curr_node.x, curr_node.y], finish) + curr_node.g,
+                          g: curr_node.g + 1.414
                         )
                       ].each do |candidate_node|
                         # out-of-bounds checks
